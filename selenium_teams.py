@@ -3,8 +3,9 @@
 
 import keyboard
 import selenium
-#from selenium import webdriver
+from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
@@ -37,19 +38,53 @@ teams_works="Microsoft Teams"
 
 ###########################################################
 
+session_id = "sdfsadf"
+def attach_to_session(executor_url, session_id):
+    original_execute = WebDriver.execute
+
+    def new_command_execute(self, command, params=None):
+        if command == "newSession":
+            # Mock the response
+            return {'success': 0, 'value': None, 'sessionId': session_id}
+        else:
+            return original_execute(self, command, params)
+
+    # Patch the function before creating the driver object
+    WebDriver.execute = new_command_execute
+    driver = webdriver.Remote(command_executor=executor_url, desired_capabilities={})
+    driver.session_id = session_id
+    # Replace the patched function with original function
+    WebDriver.execute = original_execute
+    return driver
+
+
+#driver = attach_to_session('http://127.0.0.1:4444/wd/hub', session_id)
+
+
 
 def main(outfile="teams.txt", url="https://teams.microsoft.com", username="dietzn@shure.com"):
          
 
-    existing_browser = True
-    session_url = "http://127.0.0.1:47015"
-    session_id = "4d28c5c4f9aabfd96a9c5b11987363be"
+    existing_browser = False
+    session_url = "http://172.17.0.3:4444"
+    session_id = "aa2daeb8c6703b50a836be0b591d64b3"
     
     if not existing_browser:
         #browser = webdriver.Safari()    #for macOS users[for others use chrome vis chromedriver]
-        browser = selenium.webdriver.Chrome('/snap/bin/chromium.chromedriver')    #uncomment this line,for chrome users
-    
-        # https://stackoverflow.com/questions/8344776/can-selenium-interact-with-an-existing-browser-session
+        options = Options()
+
+
+        from selenium.webdriver.chrome.options import Options as ChromeOptions
+        from selenium import webdriver
+
+        options = ChromeOptions()
+        browser = webdriver.Remote(options=options, command_executor="http://localhost:4444")
+
+        # options.headless = True
+        #
+        # browser = webdriver.Chrome("/usr/bin/chromedriver", options=options)   #uncomment this line,for chrome users
+
+                # https://stackoverflow.com/questions/8344776/can-selenium-interact-with-an-existing-browser-session
         session_url = browser.command_executor._url       #"http://127.0.0.1:60622/hub"
         session_id = browser.session_id
         print(session_url)
@@ -194,23 +229,6 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 # executor_url = driver.command_executor._url
 # session_id = driver.session_id
-
-def attach_to_session(executor_url, session_id):
-    original_execute = WebDriver.execute
-    def new_command_execute(self, command, params=None):
-        if command == "newSession":
-            # Mock the response
-            return {'success': 0, 'value': None, 'sessionId': session_id}
-        else:
-            return original_execute(self, command, params)
-    # Patch the function before creating the driver object
-    WebDriver.execute = new_command_execute
-    driver = webdriver.Remote(command_executor=executor_url, desired_capabilities={})
-    driver.session_id = session_id
-    # Replace the patched function with original function
-    WebDriver.execute = original_execute
-    return driver
-
 
 # https://stackoverflow.com/questions/28889401/detect-user-key-mouse-in-python-selenium
 #boppreh/keyboard
